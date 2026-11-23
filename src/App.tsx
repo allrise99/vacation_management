@@ -17,6 +17,9 @@ import {
   summarizeYear,
 } from './lib/leave';
 import { clearData, loadData, newId, saveData } from './lib/storage';
+import { clearAllRecords, deleteEntryRecord, restoreData, setYearGranted } from './lib/sync';
+import { useSync } from './lib/useSync';
+import { SyncBanner } from './components/SyncBanner';
 
 type View = 'calendar' | 'list';
 type FormState = { mode: 'add'; date: string } | { mode: 'edit'; entry: LeaveEntry } | null;
@@ -49,6 +52,9 @@ export default function App() {
   const [form, setForm] = useState<FormState>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  // 사용자가 실제 기록을 바꾼 횟수. 바뀌면 서버 동기화를 예약한다.
+  const [localRevision, setLocalRevision] = useState(0);
+  const sync = useSync(realData, setRealData, localRevision);
 
   // 실제 데이터만 localStorage에 저장 (예시 데이터는 저장하지 않음)
   useEffect(() => {
@@ -58,7 +64,10 @@ export default function App() {
   const update = useCallback(
     (fn: (prev: AppData) => AppData) => {
       if (demoMode) setDemoData((prev) => (prev ? fn(prev) : prev));
-      else setRealData(fn);
+      else {
+        setRealData(fn);
+        setLocalRevision((n) => n + 1);
+      }
     },
     [demoMode],
   );
@@ -103,12 +112,17 @@ export default function App() {
   const deleteEntry = (entry: LeaveEntry) => {
     const label = `${formatRange(entry.startDate, entry.endDate)} ${LEAVE_TYPE_LABEL[entry.type]} (${formatDays(entry.days)})`;
     if (!window.confirm(`${label} 기록을 삭제할까요?`)) return;
-    update((prev) => ({ ...prev, entries: prev.entries.filter((e) => e.id !== entry.id) }));
+    update((prev) => deleteEntryRecord(prev, entry.id, new Date().toISOString()));
     setForm(null);
   };
 
   const setGranted = (y: number, value: number) =>
-    update((prev) => ({ ...prev, years: { ...prev.years, [String(y)]: { annualGranted: value } } }));
+    update((prev) => setYearGranted(prev, y, value, new Date().toISOString()));
+
+  const changeRealData = (fn: (prev: AppData) => AppData) => {
+    setRealData(fn);
+    setLocalRevision((n) => n + 1);
+  };
 
   const toggleDemo = () => {
     setDemoData((prev) => (prev ? null : createDemoData(today)));
@@ -165,13 +179,7 @@ export default function App() {
           </div>
         )}
 
-        <p className="banner info sync-notice">
-          이 기기 브라우저에만 저장되며 <b>기기 간 자동 동기화되지 않습니다.</b>{' '}
-          <button type="button" className="link-button" onClick={() => setSettingsOpen(true)}>
-            백업·복원
-          </button>
-          으로 옮기세요.
-        </p>
+        <SyncBanner sync={sync} onOpenSettings={() => setSettingsOpen(true)} />
         {saveFailed && !demoMode && (
           <p className="banner error" role="alert">
             브라우저에 저장하지 못했습니다. 사생활 보호 모드이거나 저장 공간이 부족할 수 있습니다. 백업 파일을
@@ -229,7 +237,11 @@ export default function App() {
         </div>
 
         <footer className="page-footer">
-          <p>개인 기록은 서버로 전송되지 않으며 이 브라우저에만 보관됩니다.</p>
+          <p>
+            {sync.signedIn
+              ? '기록은 이 브라우저와 본인 계정의 동기화 저장소(Supabase)에만 보관됩니다.'
+              : '개인 기록은 서버로 전송되지 않으며 이 브라우저에만 보관됩니다.'}
+          </p>
         </footer>
       </main>
 
@@ -256,11 +268,17 @@ export default function App() {
           data={data}
           year={year}
           demoMode={demoMode}
+          sync={sync}
           onSetGranted={setGranted}
-          onRestore={(restored) => setRealData(restored)}
+          onRestore={(restored) => changeRealData((prev) => restoreData(prev, restored, new Date().toISOString()))}
           onResetAll={() => {
-            clearData();
-            setRealData(emptyData());
+            if (sync.signedIn) {
+              // 동기화 중이면 삭제 기록을 남겨 다른 기기와 서버에서도 지운다
+              changeRealData((prev) => clearAllRecords(prev, new Date().toISOString(), true));
+            } else {
+              clearData();
+              setRealData(emptyData());
+            }
           }}
           onToggleDemo={toggleDemo}
           onClose={() => setSettingsOpen(false)}

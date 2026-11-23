@@ -58,7 +58,8 @@ export function createBackup(data: AppData, now: Date = new Date()): string {
       format: BACKUP_FORMAT,
       version: 1,
       exportedAt: now.toISOString(),
-      data,
+      // 삭제 기록(동기화용 내부 정보)은 백업에 넣지 않는다
+      data: { version: data.version, years: data.years, entries: data.entries },
     },
     null,
     2,
@@ -104,7 +105,8 @@ export function normalizeData(input: unknown, strict = false): AppData {
       if (strict) throw new Error(`${key}년 부여일수 값이 올바르지 않습니다.`);
       continue;
     }
-    years[key] = { annualGranted: granted };
+    const updatedAt = isObject(value) && isValidTimestamp(value.updatedAt) ? value.updatedAt : undefined;
+    years[key] = updatedAt ? { annualGranted: granted, updatedAt } : { annualGranted: granted };
   }
 
   const entries: LeaveEntry[] = [];
@@ -119,10 +121,28 @@ export function normalizeData(input: unknown, strict = false): AppData {
     entries.push(entry);
   });
 
-  return { version: 1, years, entries };
+  const result: AppData = { version: 1, years, entries };
+  // 삭제 기록은 동기화용 내부 정보라 잘못된 값은 조용히 버린다
+  if (!strict && isObject(input.deleted)) {
+    const deleted = { entries: timestampMap(input.deleted.entries), years: timestampMap(input.deleted.years) };
+    if (Object.keys(deleted.entries).length || Object.keys(deleted.years).length) result.deleted = deleted;
+  }
+  return result;
 }
 
-function toEntry(raw: unknown): LeaveEntry | null {
+function timestampMap(value: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!isObject(value)) return out;
+  for (const [key, ts] of Object.entries(value)) if (key && isValidTimestamp(ts)) out[key] = ts;
+  return out;
+}
+
+export function isValidTimestamp(value: unknown): value is string {
+  return typeof value === 'string' && !Number.isNaN(Date.parse(value));
+}
+
+/** 휴가 기록 하나를 검증해서 LeaveEntry로 바꾼다. 잘못되면 null. */
+export function toEntry(raw: unknown): LeaveEntry | null {
   if (!isObject(raw)) return null;
   const { id, type, unit, startDate, endDate, days, memo, createdAt, updatedAt } = raw;
   if (typeof id !== 'string' || !id) return null;
@@ -139,8 +159,8 @@ function toEntry(raw: unknown): LeaveEntry | null {
     endDate,
     days,
     memo: typeof memo === 'string' && memo.trim() ? memo.slice(0, 200) : undefined,
-    createdAt: typeof createdAt === 'string' ? createdAt : now,
-    updatedAt: typeof updatedAt === 'string' ? updatedAt : now,
+    createdAt: isValidTimestamp(createdAt) ? createdAt : now,
+    updatedAt: isValidTimestamp(updatedAt) ? updatedAt : now,
   };
 }
 

@@ -332,6 +332,96 @@ select:focus-visible {
   justify-content: space-between;
 }
 
+.sync-signin,
+.sync-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+
+.sync-signin > span,
+.sync-error > span {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.error-inline {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.sync-status {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  max-width: 100%;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sync-status i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+}
+
+.sync-status.syncing i {
+  background: var(--primary);
+  animation: sync-pulse 1s ease-in-out infinite alternate;
+}
+
+.sync-status.offline i {
+  background: var(--text-dim);
+}
+
+@keyframes sync-pulse {
+  from {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-status.syncing i {
+    animation: none;
+  }
+}
+
+.sync-account {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 14px;
+}
+
+.account-email {
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.sync-line {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.sync-line.error {
+  color: var(--danger);
+}
+
 /* ---------- Summary ---------- */
 .summary {
   display: grid;

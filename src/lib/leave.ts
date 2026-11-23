@@ -22,12 +22,21 @@ export interface LeaveEntry {
 export interface YearSetting {
   /** 해당 연도 연차 총 부여일수 (사용자가 직접 설정) */
   annualGranted: number;
+  /** 마지막 수정 시각 (동기화 병합용, ISO 문자열) */
+  updatedAt?: string;
+}
+
+/** 삭제 기록 (동기화 시 다른 기기에도 삭제를 전파하기 위한 표시). 값은 삭제 시각 ISO 문자열 */
+export interface DeletedMarks {
+  entries: Record<string, string>;
+  years: Record<string, string>;
 }
 
 export interface AppData {
   version: 1;
   years: Record<string, YearSetting>;
   entries: LeaveEntry[];
+  deleted?: DeletedMarks;
 }
 
 /** 특별휴가 연간 부여일수 */

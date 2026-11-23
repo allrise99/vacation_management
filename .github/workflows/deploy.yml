@@ -33,6 +33,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # 저장소 Settings → Secrets and variables → Actions → Variables 에 등록한 값 (없으면 동기화 기능 없이 빌드)
+          VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
 
       - uses: actions/configure-pages@v5
 

@@ -11,3 +11,4 @@ coverage/
 vacation-backup*.json
 *-backup*.json
 backup/
+!.env.example

@@ -1,12 +1,15 @@
 import { type ChangeEvent, type FormEvent, useRef, useState } from 'react';
 import { type AppData, getAnnualGranted, validateAnnualGranted } from '../lib/leave';
 import { backupFileName, createBackup, parseBackup } from '../lib/storage';
+import type { SyncControls } from '../lib/useSync';
 import { Sheet } from './Sheet';
+import { SyncSection } from './SyncSection';
 
 interface Props {
   data: AppData;
   year: number;
   demoMode: boolean;
+  sync: SyncControls;
   onSetGranted: (year: number, value: number) => void;
   onRestore: (data: AppData) => void;
   onResetAll: () => void;
@@ -18,6 +21,7 @@ export function SettingsSheet({
   data,
   year,
   demoMode,
+  sync,
   onSetGranted,
   onRestore,
   onResetAll,
@@ -61,7 +65,9 @@ export function SettingsSheet({
       const restored = parseBackup(await file.text());
       const ok = window.confirm(
         `백업에서 휴가 기록 ${restored.entries.length}건, 연도 설정 ${Object.keys(restored.years).length}개를 불러옵니다.\n` +
-          '현재 이 기기에 저장된 데이터는 모두 바뀝니다. 계속할까요?',
+          (sync.signedIn
+            ? '현재 데이터는 모두 백업 내용으로 바뀌고, 동기화된 다른 기기에도 똑같이 반영됩니다. 계속할까요?'
+            : '현재 이 기기에 저장된 데이터는 모두 바뀝니다. 계속할까요?'),
       );
       if (!ok) return;
       onRestore(restored);
@@ -72,7 +78,7 @@ export function SettingsSheet({
   };
 
   return (
-    <Sheet title="설정 · 백업" onClose={onClose}>
+    <Sheet title={sync.phase === 'unavailable' ? '설정 · 백업' : '설정 · 동기화 · 백업'} onClose={onClose}>
       <div className="settings">
         {message && (
           <p className={`banner ${message.kind === 'ok' ? 'success' : 'error'}`} role="status">
@@ -104,18 +110,7 @@ export function SettingsSheet({
           <p className="hint">연도마다 따로 설정합니다. 상단에서 연도를 바꾸면 다른 연도를 설정할 수 있습니다.</p>
         </section>
 
-        <section>
-          <h3>데이터 저장 안내</h3>
-          <p className="banner info">
-            모든 데이터는 <b>이 기기의 이 브라우저(localStorage)</b>에만 저장됩니다. PC와 스마트폰 사이에{' '}
-            <b>자동 동기화되지 않으며</b>, 서버로 전송되지 않습니다. 브라우저 데이터를 지우면 기록도 사라지니
-            주기적으로 백업하세요.
-          </p>
-          <p className="hint">
-            다른 기기로 옮기려면: 이 기기에서 백업 파일 내려받기 → 다른 기기에서 백업 복원. 백업 파일에는 개인
-            기록이 들어 있으니 공개 저장소나 공유 폴더에 올리지 마세요.
-          </p>
-        </section>
+        <SyncSection sync={sync} />
 
         <section>
           <h3>JSON 백업 · 복원</h3>
@@ -155,14 +150,17 @@ export function SettingsSheet({
               type="button"
               className="button ghost danger"
               onClick={() => {
-                if (window.confirm('이 기기에 저장된 모든 연차 기록과 설정을 삭제할까요? 되돌릴 수 없습니다.')) {
+                const question = sync.signedIn
+                  ? '모든 연차 기록과 설정을 삭제할까요?\n동기화 중이라 서버와 다른 기기에서도 함께 삭제됩니다. 되돌릴 수 없습니다.'
+                  : '이 기기에 저장된 모든 연차 기록과 설정을 삭제할까요? 되돌릴 수 없습니다.';
+                if (window.confirm(question)) {
                   onResetAll();
                   setGranted('');
                   setMessage({ kind: 'ok', text: '모든 데이터를 삭제했습니다.' });
                 }
               }}
             >
-              이 기기의 모든 데이터 삭제
+              {sync.signedIn ? '모든 기기의 데이터 삭제' : '이 기기의 모든 데이터 삭제'}
             </button>
           </section>
         )}
