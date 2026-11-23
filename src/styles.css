@@ -71,6 +71,8 @@ body {
   font-size: 15px;
   line-height: 1.5;
   word-break: keep-all;
+  /* 띄어쓰기 없는 긴 단어(메모 등)가 화면 밖으로 넘치지 않도록 */
+  overflow-wrap: anywhere;
 }
 
 body.no-scroll {
@@ -137,6 +139,8 @@ p {
   font-size: 18px;
   font-weight: 800;
   flex: 1;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .year-picker {
@@ -247,8 +251,18 @@ p {
 
 .link-button.on-dark {
   color: #fff;
-  opacity: 0.9;
   font-size: 13px;
+  text-decoration: none;
+  background: rgb(255 255 255 / 18%);
+  border-radius: 99px;
+  padding: 0 12px;
+  min-height: 32px;
+  flex: none;
+}
+
+.sync-notice .link-button {
+  padding: 6px 2px;
+  margin: -6px 0;
 }
 
 button:focus-visible,
@@ -680,6 +694,8 @@ select:focus-visible {
   font-size: 13px;
   font-weight: 600;
   padding-left: 3px;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .day.today {
@@ -709,7 +725,9 @@ select:focus-visible {
   font-size: 10.5px;
   font-weight: 700;
   border-radius: 5px;
-  padding: 0 3px;
+  padding: 0 1px;
+  letter-spacing: -0.3px;
+  overflow-wrap: normal;
   text-align: center;
   color: #fff;
   overflow: hidden;
@@ -779,6 +797,7 @@ select:focus-visible {
 
 .mini-item {
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--border);
   background: var(--surface-2);
   border-radius: 12px;
@@ -836,6 +855,7 @@ select:focus-visible {
   font-size: 13px;
   color: var(--text-dim);
   width: 100%;
+  min-width: 0;
 }
 
 /* ---------- List ---------- */
@@ -1160,6 +1180,76 @@ legend,
 
 .desktop-only {
   display: none;
+}
+
+/* ---------- Very narrow phones (≤360px) ---------- */
+@media (max-width: 360px) {
+  .topbar-inner {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+
+  .topbar h1 {
+    font-size: 16px;
+  }
+
+  .year-picker .icon-button {
+    width: 32px;
+  }
+
+  .year-picker select {
+    padding: 6px 8px;
+  }
+
+  .content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .calendar {
+    padding: 10px 8px;
+  }
+
+  .grid {
+    gap: 2px;
+  }
+
+  .day {
+    padding: 3px 2px;
+  }
+
+  .mark {
+    font-size: 10px;
+  }
+
+  .hero-value strong {
+    font-size: 56px;
+  }
+}
+
+/* ---------- Phone landscape: 화면 높이가 낮으면 추가 버튼을 작게 ---------- */
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --fab-height: 56px;
+  }
+
+  .fab-bar {
+    left: auto;
+    background: none;
+    padding: 0 calc(16px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) 0;
+  }
+
+  .fab {
+    width: auto;
+    min-height: 48px;
+    padding: 0 22px;
+    font-size: 15px;
+    border-radius: 99px;
+  }
+
+  .topbar {
+    position: static;
+  }
 }
 
 /* ---------- Tablet / Desktop ---------- */
