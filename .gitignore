@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+*.local
+.env
+.env.*
+.DS_Store
+*.log
+
+# 개인 연차 백업 파일은 절대 저장소에 올리지 않습니다.
+vacation-backup*.json
+*-backup*.json
+backup/
