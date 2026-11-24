@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import type { SyncControls } from '../lib/useSync';
+import { isStandalone } from '../lib/pwa';
 import { formatSyncTime } from './SyncBanner';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -11,6 +12,7 @@ export function SyncSection({ sync }: { sync: SyncControls }) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [standalone] = useState(isStandalone);
 
   if (sync.phase === 'unavailable') {
     return (
@@ -141,8 +143,17 @@ export function SyncSection({ sync }: { sync: SyncControls }) {
       ) : (
         <>
           <p className="banner success">
-            <b className="account-email">{sentTo}</b>로 로그인 메일을 보냈습니다. <b>이 기기에서</b> 메일의 링크를
-            누르거나, 메일에 적힌 숫자 코드를 아래에 입력하세요.
+            <b className="account-email">{sentTo}</b>로 로그인 메일을 보냈습니다.{' '}
+            {standalone ? (
+              <>
+                홈 화면 앱에서는 메일의 <b>숫자 코드</b>를 아래에 입력하세요. (링크를 누르면 브라우저에서 열려 이 앱에는
+                로그인되지 않습니다.)
+              </>
+            ) : (
+              <>
+                <b>이 기기에서</b> 메일의 링크를 누르거나, 메일에 적힌 숫자 코드를 아래에 입력하세요.
+              </>
+            )}
           </p>
           <form className="inline-form" onSubmit={submitCode} noValidate>
             <label className="field grow">

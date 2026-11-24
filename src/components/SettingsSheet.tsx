@@ -3,6 +3,7 @@ import { type AppData, getAnnualGranted, validateAnnualGranted } from '../lib/le
 import { backupFileName, createBackup, parseBackup } from '../lib/storage';
 import type { SyncControls } from '../lib/useSync';
 import { Sheet } from './Sheet';
+import { InstallSection } from './InstallSection';
 import { SyncSection } from './SyncSection';
 
 interface Props {
@@ -111,6 +112,8 @@ export function SettingsSheet({
         </section>
 
         <SyncSection sync={sync} />
+
+        <InstallSection />
 
         <section>
           <h3>JSON 백업 · 복원</h3>
